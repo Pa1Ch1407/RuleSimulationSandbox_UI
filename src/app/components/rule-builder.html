@@ -1,0 +1,137 @@
+<div (input)="changed.emit()" (change)="changed.emit()">
+  <div class="row">
+    <label>
+      Rule set name
+      <input type="text" [(ngModel)]="model().name" placeholder="e.g. Duplicate handling" size="40" />
+    </label>
+    <label class="inline">
+      <input type="checkbox" [(ngModel)]="model().enabled" />
+      Rule set enabled
+    </label>
+  </div>
+  @for (e of err('name'); track e) { <p class="error">{{ e }}</p> }
+  <p class="hint">
+    Rules run from highest to lowest priority. When two rules share a priority, the one
+    higher in this list runs first. The first rule that matches decides the request; if
+    none match, the request goes to the manual queue.
+  </p>
+  @for (e of err('rules'); track e) { <p class="error">{{ e }}</p> }
+
+  @for (rule of model().rules; track rule.uid; let i = $index, first = $first, last = $last) {
+    <fieldset class="rule" [class.disabled]="!rule.enabled">
+      <legend>Rule {{ i + 1 }}</legend>
+
+      <div class="row">
+        <label>
+          Name
+          <input type="text" [(ngModel)]="rule.name" placeholder="e.g. Decline undocumented duplicates" size="36" />
+        </label>
+        <label>
+          Priority
+          <input type="number" step="1" [(ngModel)]="rule.priority" placeholder="e.g. 100" class="narrow" />
+        </label>
+        <label>
+          Action
+          <select [(ngModel)]="rule.action">
+            <option value="" disabled>Choose an action</option>
+            @for (a of actions; track a.value) { <option [value]="a.value">{{ a.label }}</option> }
+          </select>
+        </label>
+        <label class="inline">
+          <input type="checkbox" [(ngModel)]="rule.enabled" />
+          Enabled
+        </label>
+      </div>
+      @for (e of err('rules[' + i + '].name'); track e) { <p class="error">{{ e }}</p> }
+      @for (e of err('rules[' + i + '].priority'); track e) { <p class="error">{{ e }}</p> }
+      @for (e of err('rules[' + i + '].action'); track e) { <p class="error">{{ e }}</p> }
+
+      <div class="row">
+        <label>
+          Match when
+          <select [(ngModel)]="rule.conditionJoin">
+            <option value="AND">all conditions are true (AND)</option>
+            <option value="OR">any condition is true (OR)</option>
+          </select>
+        </label>
+      </div>
+
+      <table class="conditions">
+        <thead>
+          <tr><th>Field</th><th>Operator</th><th>Value</th><th><span class="sr-only">Actions</span></th></tr>
+        </thead>
+        <tbody>
+          @for (c of rule.conditions; track c.uid; let j = $index, cFirst = $first, cLast = $last) {
+            @let path = 'rules[' + i + '].conditions[' + j + ']';
+            <tr>
+              <td>
+                <select [ngModel]="c.field" (ngModelChange)="setField(c, $event)" [attr.aria-label]="'Condition ' + (j + 1) + ' field'">
+                  <option value="" disabled>Choose a field</option>
+                  @for (f of fields; track f.name) { <option [value]="f.name">{{ f.label }}</option> }
+                </select>
+              </td>
+              <td>
+                <select [ngModel]="c.operator" (ngModelChange)="setOperator(c, $event)" [disabled]="!c.field"
+                        [attr.aria-label]="'Condition ' + (j + 1) + ' operator'">
+                  <option value="" disabled>Choose an operator</option>
+                  @for (o of operatorsFor(c.field); track o.op) { <option [value]="o.op">{{ o.label }}</option> }
+                </select>
+              </td>
+              <td>
+                @let def = fieldDef(c.field);
+                @let kind = operandKind(c.operator);
+                @if (!def || !c.operator) {
+                  <span class="muted">Choose a field and operator first</span>
+                } @else if (kind === 'none') {
+                  <span class="muted">No value needed</span>
+                } @else if (def.type === 'enum' && kind === 'single') {
+                  <select [(ngModel)]="c.value" [attr.aria-label]="'Condition ' + (j + 1) + ' value'">
+                    <option value="" disabled>Choose a value</option>
+                    @for (m of def.members; track m) { <option [value]="m">{{ m }}</option> }
+                  </select>
+                } @else if (def.type === 'enum' && kind === 'list') {
+                  <span class="checks" role="group" [attr.aria-label]="'Condition ' + (j + 1) + ' values'">
+                    @for (m of def.members; track m) {
+                      <label class="inline">
+                        <input type="checkbox" [checked]="c.values.includes(m)"
+                               (change)="toggleValue(c, m, $any($event.target).checked)" />
+                        {{ m }}
+                      </label>
+                    }
+                  </span>
+                } @else if (def.type === 'text' && kind === 'list') {
+                  <input type="text" [(ngModel)]="c.valuesText" placeholder="e.g. ITM-4821, ITM-1002" size="28"
+                         [attr.aria-label]="'Condition ' + (j + 1) + ' values, comma separated'" />
+                } @else {
+                  <input type="text" [attr.inputmode]="def.type === 'numeric' ? 'decimal' : null"
+                         [(ngModel)]="c.value" [placeholder]="def.placeholder ?? ''" size="18"
+                         [attr.aria-label]="'Condition ' + (j + 1) + ' value'" />
+                }
+                @for (e of err(path + '.field'); track e) { <p class="error">{{ e }}</p> }
+                @for (e of err(path + '.operator'); track e) { <p class="error">{{ e }}</p> }
+                @for (e of err(path + '.value'); track e) { <p class="error">{{ e }}</p> }
+                @for (e of err(path + '.values'); track e) { <p class="error">{{ e }}</p> }
+              </td>
+              <td class="nowrap">
+                <button type="button" (click)="moveCondition(rule, j, -1)" [disabled]="cFirst" title="Move condition up">↑</button>
+                <button type="button" (click)="moveCondition(rule, j, 1)" [disabled]="cLast" title="Move condition down">↓</button>
+                <button type="button" (click)="removeCondition(rule, j)">Remove</button>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+      @for (e of err('rules[' + i + '].conditions'); track e) { <p class="error">{{ e }}</p> }
+
+      <div class="row">
+        <button type="button" (click)="addCondition(rule)">Add condition</button>
+        <span class="spacer"></span>
+        <button type="button" (click)="moveRule(i, -1)" [disabled]="first">Move rule up</button>
+        <button type="button" (click)="moveRule(i, 1)" [disabled]="last">Move rule down</button>
+        <button type="button" (click)="removeRule(i)">Remove rule</button>
+      </div>
+    </fieldset>
+  }
+
+  <button type="button" (click)="addRule()">Add rule</button>
+</div>

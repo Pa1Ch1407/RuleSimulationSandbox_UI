@@ -1,0 +1,104 @@
+@let r = result();
+@let cd = r.changedDecisions;
+<section aria-live="polite">
+  <h2>Results</h2>
+  <p class="muted">Ran {{ source() }} against {{ r.datasetCount | number }} historical requests. No request data was changed.</p>
+  @if (stale()) {
+    <p class="warning">The rule set has been edited since this run. Run the simulation again to see up-to-date results.</p>
+  }
+
+  <div class="columns">
+    <div>
+      <h3>Summary</h3>
+      <table>
+        <thead><tr><th>Projected action</th><th class="num">Requests</th><th class="num">Share</th></tr></thead>
+        <tbody>
+          @for (row of summaryRows(); track row.label) {
+            <tr><td>{{ row.label }}</td><td class="num">{{ row.count | number }}</td><td class="num">{{ row.share | percent: '1.1-1' }}</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <div>
+      <h3>Compared with what actually happened</h3>
+      <table>
+        <tbody>
+          <tr><th scope="row">Same decision as recorded</th><td class="num">{{ r.baselineComparison.agreementCount | number }}</td></tr>
+          <tr><th scope="row">Agreement rate</th><td class="num">{{ r.baselineComparison.agreementRate | percent: '1.1-1' }}</td></tr>
+          <tr><th scope="row">Decision would change</th><td class="num">{{ r.baselineComparison.changedDecisionCount | number }}</td></tr>
+        </tbody>
+      </table>
+      <p class="hint">
+        Manual review and "no rule matched" count as the same decision as a recorded manual
+        approval or decline, because a person decides either way.
+      </p>
+    </div>
+  </div>
+
+  <h3>Requests decided by each rule</h3>
+  <table>
+    <thead><tr><th>Rule</th><th class="num">Requests</th><th class="num">Share</th><th>Note</th></tr></thead>
+    <tbody>
+      @for (rule of r.ruleAttribution; track rule.ruleId) {
+        @let note = attributionNote(rule);
+        <tr [class.flag]="note">
+          <td>{{ rule.ruleName }}</td>
+          <td class="num">{{ rule.firedCount | number }}</td>
+          <td class="num">{{ rule.firedRate | percent: '1.1-1' }}</td>
+          <td>{{ note }}</td>
+        </tr>
+      }
+    </tbody>
+  </table>
+  <p class="hint">Each request is credited to the first rule that matched it only.</p>
+
+  <h3>Requests whose decision would change ({{ cd.total | number }})</h3>
+  @if (cd.total === 0) {
+    <p>No decisions would change. Every request gets the same decision as it did historically.</p>
+  } @else {
+    <div class="row">
+      <button type="button" (click)="goTo(1)" [disabled]="loading() || cd.page === 1">First</button>
+      <button type="button" (click)="goTo(cd.page - 1)" [disabled]="loading() || cd.page === 1">Previous</button>
+      <span>Page {{ cd.page }} of {{ cd.totalPages | number }}</span>
+      <button type="button" (click)="goTo(cd.page + 1)" [disabled]="loading() || cd.page >= cd.totalPages">Next</button>
+      <button type="button" (click)="goTo(cd.totalPages)" [disabled]="loading() || cd.page >= cd.totalPages">Last</button>
+      <label>
+        Rows per page
+        <select [ngModel]="cd.pageSize" (ngModelChange)="pageSizeChange.emit(+$event)" [disabled]="loading()">
+          @for (s of pageSizes; track s) { <option [value]="s">{{ s }}</option> }
+        </select>
+      </label>
+      @if (loading()) { <span class="muted">Loading…</span> }
+    </div>
+
+    <table class="changed">
+      <thead>
+        <tr>
+          <th>Request</th>
+          <th>What actually happened</th>
+          <th>What the rules would do</th>
+          <th>Decided by rule</th>
+          <th>Region</th>
+          <th>Tier</th>
+          <th>Channel</th>
+          <th class="num">Declared value</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (row of cd.items; track row.requestId) {
+          <tr>
+            <td class="nowrap">{{ row.requestId }}</td>
+            <td>{{ outcome(row.recordedOutcome) }}</td>
+            <td><strong>{{ label(row.projectedAction) }}</strong></td>
+            <td>{{ row.winningRule ?? '(none)' }}</td>
+            <td>{{ row.region ?? '' }}</td>
+            <td>{{ row.accountTier }}</td>
+            <td>{{ row.channel }}</td>
+            <td class="num">{{ row.declaredValue | number: '1.2-2' }}</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  }
+</section>

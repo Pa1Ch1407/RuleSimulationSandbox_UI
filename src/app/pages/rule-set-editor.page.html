@@ -1,0 +1,59 @@
+<p><a routerLink="/">Back to rule sets</a></p>
+
+@if (notFound()) {
+  <section>
+    <h2>Rule set not found</h2>
+    @if (message(); as m) { <p class="error banner" role="status">{{ m.text }}</p> }
+    <p>It may have been deleted. <a routerLink="/">Go back to the list of rule sets</a> or start a new one.</p>
+    <button type="button" (click)="startNew()">Start a new rule set</button>
+  </section>
+} @else if (loading()) {
+  <p class="muted">Loading rule set…</p>
+} @else {
+  <section>
+    <h2>
+      @if (currentId() !== null) { Editing "{{ model().name }}" } @else { New rule set }
+      @if (dirty()) { <span class="muted">(unsaved changes)</span> }
+    </h2>
+    <div class="row">
+      <button type="button" (click)="startNew()">Start a new rule set</button>
+      <label>
+        Or start from an example
+        <select #ex (change)="loadExample(ex.value); ex.value = ''">
+          <option value="">Choose an example</option>
+          @for (e of examples; track e.label; let i = $index) { <option [value]="i">{{ e.label }}</option> }
+        </select>
+      </label>
+    </div>
+
+    <app-rule-builder [model]="model()" [errors]="visibleErrors()" (changed)="onEdit()" />
+
+    <div class="actions row">
+      <button type="button" class="primary" (click)="run()" [disabled]="busy()">Run simulation</button>
+      <button type="button" (click)="save()" [disabled]="busy()">
+        {{ currentId() === null ? 'Save' : 'Save changes' }}
+      </button>
+      @if (currentId() !== null) {
+        <button type="button" (click)="save(true)" [disabled]="busy()">Save as a new rule set</button>
+      }
+      @if (busy()) { <span class="muted">Working…</span> }
+    </div>
+    <p class="hint">You don't need to save before running. Unsaved changes are simulated as a draft.</p>
+
+    @if (message(); as m) {
+      <p [class]="m.kind === 'error' ? 'error banner' : 'ok banner'" role="status">{{ m.text }}</p>
+    }
+  </section>
+
+  @if (result(); as r) {
+    <div id="results">
+      <app-simulation-results
+        [result]="r"
+        [source]="lastRun()?.source ?? ''"
+        [stale]="stale()"
+        [loading]="busy()"
+        (pageChange)="fetchPage($event)"
+        (pageSizeChange)="changePageSize($event)" />
+    </div>
+  }
+}
