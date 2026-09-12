@@ -1,23 +1,23 @@
-# Rule Simulation Sandbox UI
+Rule Simulation Sandbox UI
 
 Angular 21 app for building rule sets and running simulations against the .NET API.
 Works with Node 20.19+, 22.12+ or 24+.
 
-```bash
+
 npm install
-npm start          # http://localhost:4200
-```
+npm start          
+http://localhost:4200
+
 
 The API must be running at `https://localhost:7001` (`dotnet run --project src/RuleSimulation.Api`
 from the repo root). `proxy.conf.json` forwards `/api` there, so no CORS setup is needed.
 If your API runs on another port, change `target` in `proxy.conf.json`.
 
-## Tests
+Tests
 
-```bash
 npm test            # runs once
 npx ng test         # watch mode, reruns on save
-```
+
 
 110 unit tests run with Vitest in jsdom (no browser needed), using Angular's `@angular/build:unit-test` runner.
 
@@ -39,7 +39,7 @@ npx ng test         # watch mode, reruns on save
 If `npm install` fails with `Cannot read properties of null (reading 'edgesOut')`, that's an npm bug with
 jsdom's optional dependencies; `.npmrc` sets `legacy-peer-deps=true` to avoid it.
 
-## Pages
+Pages
 
 | URL | Page |
 |---|---|
@@ -52,7 +52,7 @@ On the editor page, "Run simulation" shows the results below the builder. Saving
 moves the URL to its id without clearing the page. Leaving the editor with unsaved changes asks
 for confirmation.
 
-## Structure
+Structure
 
 - `src/app/app.routes.ts` — the routes above, and the unsaved-changes guard.
 - `src/app/pages/dashboard.page.ts` — the dashboard.
