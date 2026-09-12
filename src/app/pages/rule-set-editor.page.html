@@ -17,7 +17,7 @@
     </h2>
     <div class="row">
       <button type="button" (click)="startNew()">Start a new rule set</button>
-      <label>
+      <label style="display: none;">
         Or start from an example
         <select #ex (change)="loadExample(ex.value); ex.value = ''">
           <option value="">Choose an example</option>

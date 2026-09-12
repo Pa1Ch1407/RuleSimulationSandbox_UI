@@ -183,7 +183,7 @@ export class RuleSetEditorPage {
         this.busy.set(false);
         this.result.set(res);
         this.message.set(null);
-        if (page === 1) setTimeout(() => document.getElementById('results')?.scrollIntoView({ behavior: 'smooth' }));
+        if (page === 1) setTimeout(() => document.getElementById('results')?.scrollIntoView?.({ behavior: 'smooth' }));
       },
       error: (e: ApiError) => this.fail(e),
     });

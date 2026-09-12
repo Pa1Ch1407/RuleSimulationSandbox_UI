@@ -12,6 +12,33 @@ The API must be running at `https://localhost:7001` (`dotnet run --project src/R
 from the repo root). `proxy.conf.json` forwards `/api` there, so no CORS setup is needed.
 If your API runs on another port, change `target` in `proxy.conf.json`.
 
+## Tests
+
+```bash
+npm test            # runs once
+npx ng test         # watch mode, reruns on save
+```
+
+110 unit tests run with Vitest in jsdom (no browser needed), using Angular's `@angular/build:unit-test` runner.
+
+| File | What it covers |
+|---|---|
+| `core/field-catalog.spec.ts` | Fields, operators per type, operand kinds, number format (same rule as the API) |
+| `core/validation.spec.ts` | The spec's three nonsense examples, required fields, enum members, list values, API-matching error paths, live vs on-submit errors |
+| `core/editable.spec.ts` | Builder ↔ API conversion: displayOrder from screen order, value/values per operator, comma lists, round trip |
+| `core/api.service.spec.ts` | Endpoints and bodies, ProblemDetails → field errors, "API not running" message |
+| `components/rule-builder.spec.ts` | Field → operator → value inputs (placeholder, dropdown, checkboxes, comma box, none), clearing on change, add/remove/reorder, errors next to inputs |
+| `components/simulation-results.spec.ts` | Summary, comparison, changed list, paging bounds, page size, empty list, stale notice, per-rule warnings |
+| `components/rule-set-list.spec.ts` | List, open, delete, UTC timestamps |
+| `pages/dashboard.page.spec.ts` | Loading, errors, new/open navigation, delete with confirmation |
+| `pages/rule-set-editor.page.spec.ts` | Loading by URL, not found, draft vs saved runs, paging what was run, create/update/save-as-new, server errors, unsaved-changes checks |
+| `app.routes.spec.ts` | Routes, input binding, and the unsaved-changes guard through the real router |
+
+`src/app/testing/api-mock.ts` provides a spy-based `ApiService` and sample API responses for the page tests.
+
+If `npm install` fails with `Cannot read properties of null (reading 'edgesOut')`, that's an npm bug with
+jsdom's optional dependencies; `.npmrc` sets `legacy-peer-deps=true` to avoid it.
+
 ## Pages
 
 | URL | Page |
